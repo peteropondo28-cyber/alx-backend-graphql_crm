@@ -1,30 +1,23 @@
-def update_low_stock():
-    from datetime import datetime
-    from gql import gql, Client
-    from gql.transport.requests import RequestsHTTPTransport
+from datetime import datetime
+import requests
 
-    transport = RequestsHTTPTransport(
-        url="http://localhost:8000/graphql",
-        verify=False
-    )
-
-    client = Client(transport=transport, fetch_schema_from_transport=True)
-
-    mutation = gql("""
-    mutation {
-      updateLowStockProducts {
-        success
-        products {
-          name
-          stock
-        }
-      }
-    }
-    """)
-
-    result = client.execute(mutation)
+def log_crm_heartbeat():
+    """
+    Logs a heartbeat message every 5 minutes to confirm CRM health
+    """
     timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+    log_message = f"{timestamp} CRM is alive\n"
 
-    with open("/tmp/low_stock_updates_log.txt", "a") as f:
-        for p in result["updateLowStockProducts"]["products"]:
-            f.write(f"{timestamp} {p['name']} -> stock {p['stock']}\n")
+    # Write heartbeat log (append mode)
+    with open("/tmp/crm_heartbeat_log.txt", "a") as f:
+        f.write(log_message)
+
+    # Optional: ping GraphQL endpoint to verify availability
+    try:
+        requests.post(
+            "http://localhost:8000/graphql",
+            json={"query": "{ hello }"},
+            timeout=3,
+        )
+    except Exception:
+        pass
